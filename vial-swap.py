@@ -8,17 +8,17 @@ import pathlib
 # Expect at least one argument (input filename)
 if len(sys.argv) < 2:
 	print("Input file not specified.")
-	print("Expected format is: swap.py filename.layout.json")
-	print("eg. python3 ./swap.py lily58.layout.json")
+	print("Expected format is: vial-swap.py filename.vil")
+	print("eg. python3 ./vial-swap.py lily58.vil")
 	exit()
 
 # Convert argument to a Path
 inputFile = pathlib.Path(sys.argv[1])
 
-# Make sure the input filename ends with .layout.json
-if inputFile.name[-12:] != '.layout.json':
+# Make sure the input filename ends with .vil
+if inputFile.name[-4:] != '.vil':
 	print("Invalid input file.")
-	print("Must be a *.layout.json file exported from Via.")
+	print("Must be a *.vil file exported from Vial.")
 	exit()
 
 # Check if input file actually exists
@@ -28,18 +28,18 @@ if not inputFile.exists():
 
 # Make sure it's a file, not a directory
 if inputFile.is_dir():
-	print("Input file is a directory, not a JSON file.")
+	print("Input file is a directory, not a VIL file.")
 	exit()
 
 # Grab the first part of the input filename
-# eg. If the inputFile is "lily58.layout.json", then we want "lily58"
+# eg. If the inputFile is "lily58.vil", then we want "lily58"
 nameChunks = inputFile.name.split('.')
 nameWithoutExtension = nameChunks[0]
 
 # Put the output file in the same directory as the input file
 # and give it the same name, but with "flipped" in the name.
-# eg. /tmp/lily58.layout.json becomes /tmp/lily58.flipped.json
-outputFileName = nameWithoutExtension + '.flipped.json'
+# eg. /tmp/lily58.vil becomes /tmp/lily58.flipped.vil
+outputFileName = nameWithoutExtension + '.flipped.vil'
 outputFile = pathlib.Path(inputFile.parent, outputFileName)
 
 with inputFile.open() as original:
@@ -50,19 +50,21 @@ with inputFile.open() as original:
 		
 		newLayers = []
 
-		# Iterate through the 'layers' attribute of the JSON.
+		# Iterate through the 'layout' attribute of the JSON.
 		#
-		# The 'layers' attribute is an array of arrays.
-		# Each array contains the entire keymap for that layer.
+		# The 'layout' attribute consists of a 3-level array.
+		# The first level is the array of layers.
+		# The second level is the individual layer (an array of rows).
+		# The third level is a row (an array of keys).
 		# 
 		# So in order to flip each layer, we split the layer's
-		# key list in half and swap the two halves around.
-		for l in data['layers']:
+		# array of rows in half and swap the two halves around.
+		for l in data['layout']:
 			size = math.floor(len(l) / 2)
 			newLayers += [l[size:] + l[:size]]
 			
 		# Update the original JSON with the flipped layout
-		data['layers'] = newLayers
+		data['layout'] = newLayers
 
 		# Write the updated JSON to the output file
 		flipped.write(json.dumps(data, indent = 4))
